@@ -194,6 +194,18 @@ def fhd_to_netcdf(fhdFile, disFile, locationFile, fileOutput):
 		values = find_values(fileHandle, numberOfHRUs, stressPeriodIndices[index], timeStepIndices[index], layerIndices[index])
 		var[:] = values
 
+	# Global attributes
+    ncfile.title = 'Modflow Formatted Head Package'
+    ncfile.bands = 1
+    ncfile.bands_name = 'nsteps'
+    ncfile.bands_desc = 'Variable information for ' + fhdFile
+    ncfile.number_of_stress_periods = numberOfStressPeriods
+    ncfile.number_of_layers = numberOfLayers
+    ncfile.time_unit = timeUnit
+    ncfile.length_unit = lengthUnit
+
+    ncfile.close()
+
 	
 if __name__ == "__main__":
 
