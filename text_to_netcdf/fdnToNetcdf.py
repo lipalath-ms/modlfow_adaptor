@@ -165,8 +165,11 @@ def fdn_to_netcdf(fdnFile, disFile, locationFile, fileOutput):
  	for i in range(numberOfStressPeriods):
  		for j in range(numberOfLayers):
  			var = ncfile.createVariable("drawdown"+str(i+1)+"_"+str(j+1), 'f8', ('timestep'+"_"+str(i+1), 'lat', 'lon'))
-			var.description = "Water Drawdown for HRUs in Stress Period " +str(i+1)+ " Layer " +str(j+1)
-			var.units = lengthUnit
+ 			var.layer_name = "drawdown"+str(i+1)+"_"+str(j+1)
+			var.layer_desc = "Water Drawdown for HRUs in Stress Period " +str(i+1)+ " Layer " +str(j+1)
+			var.layer_units = lengthUnit
+			var.grid_mapping = "crs" 
+
 			fileHandle = open(fdnFile, 'r')
 			values = find_values(fileHandle, numberOfHRUs, i+1, j+1)
 			var[:] = values

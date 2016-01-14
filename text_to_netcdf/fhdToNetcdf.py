@@ -30,24 +30,24 @@ def find_length_unit(lengthValue):
 		lengthUnit = "centimeters"
 	return lengthUnit			
 
-def find_values(fileHandle, numberOfHRUs, stressPeriodIndex, timeStepIndex, layerIndex):
-	
+def find_values(fileHandle, numberOfHRUs, stressPeriodIndex, layerIndex):
+
 	hruValues = [] 
-	sum = 0
-	
+		
 	for line in fileHandle:
+		sum = 0
 		if "HEAD" in line:
 			indexValues = line.strip().split()
-			if int(indexValues[0]) == timeStepIndex and int(indexValues[1]) == stressPeriodIndex and int(indexValues[7]) == layerIndex:
+			if int(indexValues[1]) == stressPeriodIndex and int(indexValues[7]) == layerIndex:
 				while sum != numberOfHRUs:
 					values = fileHandle.next().split()
 					lengthOfLine = len(values)
 					sum += lengthOfLine
 					for index in range(lengthOfLine):
 						hruValues.append(float(values[index]))
-	
-	return hruValues
 
+	return hruValues
+	
 
 def find_average_resolution(fileHandle, numberOfHRUs, numberOfRows, numberOfColumns):
 
@@ -113,34 +113,6 @@ def fhd_to_netcdf(fhdFile, disFile, locationFile, fileOutput):
 		multiplierCounts.append(multiplier)
 		stressPeriodStates.append(stateOfStressPeriod)
 
-
-	for index in range(len(timeStepCounts)):
-		totalNumberOfTimeSteps += timeStepCounts[index]
-
-	layerIndices = []
-	timeStepIndices = []
-	stressPeriodIndices = []
-	stressPeriodTimeIndices = []
-	simulationTimeIndices = []
-
-	fileHandle = open(fhdFile, 'r')
-	for line in fileHandle:
-		if "HEAD" in line:
-			values = line.strip().split()
-			timeStepIndex = int(values[0])
-			stressPeriodIndex = int(values[1])
-			timeIndexOfStressPeriod = float(values[2])
-			timeIndexOfSimulation = float(values[3])
-
-			timeStepIndices.append(timeStepIndex)
-			stressPeriodIndices.append(stressPeriodIndex)
-			stressPeriodTimeIndices.append(timeIndexOfStressPeriod)
-			simulationTimeIndices.append(timeIndexOfSimulation)
-
-	value = len(timeStepIndices) / numberOfLayers
-	for i in range(value):
-		for j in range(1, numberOfLayers+1):
-			layerIndices.append(j)
 	
 	fileHandle = open(locationFile, 'r')
 	values = find_average_resolution(fileHandle, numberOfHRUs, numberOfRows, numberOfColumns)
@@ -153,6 +125,10 @@ def fhd_to_netcdf(fhdFile, disFile, locationFile, fileOutput):
 	ncfile = netCDF4.Dataset('fhd.nc', mode='w')
 
 	# Initialize dimensions
+
+	for index in range(numberOfStressPeriods):
+		timestep = ncfile.createDimension('timestep'+"_"+str(index+1), timeStepCounts[index])
+
 	lat_dim = ncfile.createDimension('lat', numberOfRows)
 	lon_dim = ncfile.createDimension('lon', numberOfColumns)
 
@@ -185,14 +161,18 @@ def fhd_to_netcdf(fhdFile, disFile, locationFile, fileOutput):
 	crs = ncfile.createVariable('crs', 'S1',)
 	crs.spatial_ref = sr.ExportToWkt()
 	
-	for index in range(len(timeStepIndices)):
-		var = ncfile.createVariable("head_"+str(stressPeriodIndices[index])+"_"+str(timeStepIndices[index])+"_"+str(layerIndices[index]), 'f8', ('lat', 'lon'))
-		var.name = "head_" +str(stressPeriodIndices[index])+ "_" +str(timeStepIndices[index])
-		var.description = "Water head for HRUs in Stress Period " +str(stressPeriodIndices[index])+ " Time Step " +str(timeStepIndices[index])+ " Layer " +str(layerIndices[index])
-		var.units = lengthUnit
-		fileHandle = open(fhdFile, 'r')
-		values = find_values(fileHandle, numberOfHRUs, stressPeriodIndices[index], timeStepIndices[index], layerIndices[index])
-		var[:] = values
+	
+ 	for i in range(numberOfStressPeriods):
+ 		for j in range(numberOfLayers):
+ 			var = ncfile.createVariable("head_"+str(i+1)+"_"+str(j+1), 'f8', ('timestep'+"_"+str(i+1), 'lat', 'lon'))
+ 			var.layer_name = "head_"+str(i+1)+"_"+str(j+1)
+			var.layer_desc = "Water head for HRUs in Stress Period " +str(i+1)+ " Layer " +str(j+1)
+			var.layer_units = lengthUnit
+			var.grid_mapping = "crs" 
+
+			fileHandle = open(fhdFile, 'r')
+			values = find_values(fileHandle, numberOfHRUs, i+1, j+1)
+			var[:] = values
 
 	# Global attributes
 	ncfile.title = 'Modflow Formatted Head Package'
@@ -204,6 +184,7 @@ def fhd_to_netcdf(fhdFile, disFile, locationFile, fileOutput):
 	ncfile.time_unit = timeUnit
 	ncfile.length_unit = lengthUnit
 
+	# Close the 'ncfile' object
 	ncfile.close()
 
 	
