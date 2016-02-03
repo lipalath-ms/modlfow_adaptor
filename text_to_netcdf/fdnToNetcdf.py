@@ -45,7 +45,6 @@ def find_values(fileHandle, numberOfHRUs, stressPeriodIndex, layerIndex):
 					sum += lengthOfLine
 					for index in range(lengthOfLine):
 						hruValues.append(float(values[index]))
-
 	return hruValues
 	
 
