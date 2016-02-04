@@ -4,10 +4,10 @@ import numpy
 import osr
 import sys
 
-def find_values(cbc, namePosition, layer):
+def find_values(cbc, variablePosition, layerIndex):
 
-	value = cbc.get_record(namePosition)[layer, :, :]
-	return value
+	values = cbc.get_record(variablePosition)[layerIndex, :, :]
+	return values
 
 
 def find_average_resolution(fileHandle, numberOfHRUs, numberOfRows, numberOfColumns):
@@ -38,9 +38,7 @@ def find_average_resolution(fileHandle, numberOfHRUs, numberOfRows, numberOfColu
 def cbc_to_netcdf(cbcFile, disFile, locationFile, fileOutput):
 
 	cbc = binaryfile.CellBudgetFile(cbcFile)
-	recordNames = cbc.unique_record_names()
-	lengthOfRecordNames = len(recordNames)
-	numberOfRecords = cbc.get_nrecords()
+	variableNames = cbc.unique_record_names()
 	
 	fileHandle = open(disFile, 'r')
 	for line in fileHandle:
@@ -106,20 +104,20 @@ def cbc_to_netcdf(cbcFile, disFile, locationFile, fileOutput):
 	crs = ncfile.createVariable('crs', 'S1',)
 	crs.spatial_ref = sr.ExportToWkt()
 
-	namePosition = 0
+	variablePosition = 0
 
-	for i in range(numberOfStressPeriods):
-		for j in range(timeStepForStressPeriods[i]):
-			for p in recordNames:
-				for q in range(numberOfLayers):
-					var = ncfile.createVariable(p.strip()+"_"+str(i+1)+"_"+str(j+1)+"_"+str(q+1), 'f8', ('lat', 'lon'))
-					var.layer_name = p.strip()+"_"+str(i+1)+"_"+str(j+1)+"_"+str(q+1)
-					var.layer_desc = "Record " +p.strip()+" Stress Period "+str(i+1)+ " Time Step " +str(j+1)+ " Layer " +str(q+1)
-					#var.layer_units = lengthUnit
+	for spIndex in range(numberOfStressPeriods):
+		for tsIndex in range(timeStepForStressPeriods[spIndex]):
+			for varName in variableNames:
+				for layerIndex in range(numberOfLayers):
+					var = ncfile.createVariable(varName.strip() +"_"+ str(spIndex+1) +"_"+ str(tsIndex+1) +"_"+ str(layerIndex+1), 'f8', ('lat', 'lon'))
+					var.layer_name = varName.strip() +"_" +str(spIndex+1) +"_"+ str(tsIndex+1) +"_"+ str(layerIndex+1)
+					var.layer_desc = "Variable "+ varName.strip() +": Stress Period "+ str(spIndex+1) +", Time Step "+ str(tsIndex+1) + ", Layer " + str(layerIndex+1)
+					var.layer_units = "none"
 					var.grid_mapping = "crs" 
-					values = find_values(cbc, namePosition, q)
+					values = find_values(cbc, variablePosition, layerIndex)
 					var[:] = values
-				namePosition += 1
+				variablePosition += 1
 				
 
 if __name__ == "__main__":
