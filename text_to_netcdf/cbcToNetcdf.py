@@ -118,7 +118,17 @@ def cbc_to_netcdf(cbcFile, disFile, locationFile, fileOutput):
 					values = find_values(cbc, variablePosition, layerIndex)
 					var[:] = values
 				variablePosition += 1
-				
+
+
+	# Global attributes
+	ncfile.title = 'Modflow Cell by Cell by Cell Budget Package'
+	ncfile.bands = 1
+	ncfile.bands_name = 'nsteps'
+	ncfile.bands_desc = 'Variable information for ' + cbcFile
+	
+	# Close the 'ncfile' object
+	ncfile.close()
+
 
 if __name__ == "__main__":
 
